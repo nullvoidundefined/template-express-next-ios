@@ -4,13 +4,15 @@ const ERROR_CODES = {
   AUTH: {
     // Authenticated user attempted an admin-only route
     ADMIN_REQUIRED: 'AUTH_ADMIN_REQUIRED',
+    // Both a session cookie and a bearer token were sent
+    AMBIGUOUS_CREDENTIALS: 'AUTH_AMBIGUOUS_CREDENTIALS',
     // Duplicate email on registration
     EMAIL_ALREADY_REGISTERED: 'AUTH_EMAIL_ALREADY_REGISTERED',
     // Wrong email or password on login, or wrong current password on change
     INVALID_CREDENTIALS: 'AUTH_INVALID_CREDENTIALS',
     // Password-reset token not found, already used, or past expiry
     INVALID_RESET_TOKEN: 'AUTH_INVALID_RESET_TOKEN',
-    // No session cookie present
+    // No valid session cookie or bearer token
     REQUIRED: 'AUTH_REQUIRED',
     // Session token not found in DB or expired past TTL
     SESSION_EXPIRED: 'AUTH_SESSION_EXPIRED',

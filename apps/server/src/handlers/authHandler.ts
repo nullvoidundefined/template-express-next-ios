@@ -13,6 +13,8 @@ import {
 import { HTTP } from 'app/constants/httpConstants.js';
 import {
   SESSION_COOKIE_NAME,
+  SESSION_TRANSPORT_HEADER,
+  SESSION_TRANSPORT_TOKEN,
   SESSION_TTL_MS,
 } from 'app/constants/sessionConstants.js';
 import { clearSession } from 'app/middleware/requireAuthMiddleware.js';
@@ -27,6 +29,7 @@ import type {
 } from 'app/schemas/authSchema.js';
 import { hashToken } from 'app/services/hashService.js';
 import { logger } from 'app/services/loggerService.js';
+import { parseSessionToken } from 'app/services/parseSessionTokenParser.js';
 
 /**
  * Side-effecting dependencies injected so handler tests can supply fakes
@@ -71,6 +74,32 @@ function clearCookieOptions() {
   };
 }
 
+function wantsTokenTransport(req: Request): boolean {
+  const value = req.headers?.[SESSION_TRANSPORT_HEADER.toLowerCase()];
+  return value === SESSION_TRANSPORT_TOKEN;
+}
+
+// Native clients opt in with the transport header and get the token in the body
+// with no cookie. Everyone else gets the cookie and a body of only { user }.
+function sendSession(
+  req: Request,
+  res: Response,
+  status: number,
+  user: User,
+  sessionId: string,
+): void {
+  if (wantsTokenTransport(req)) {
+    res.set('Cache-Control', 'no-store');
+    res.status(status).json({
+      sessionToken: sessionId,
+      user: toUserResponse(user),
+    });
+    return;
+  }
+  res.cookie(SESSION_COOKIE_NAME, sessionId, sessionCookieOptions());
+  res.status(status).json({ user: toUserResponse(user) });
+}
+
 function createAuthHandlers({
   authRepo,
   sendPasswordResetEmail,
@@ -89,8 +118,7 @@ function createAuthHandlers({
         'User registered',
       );
       trackEvent(user.id, ANALYTICS_EVENTS.USER_REGISTERED);
-      res.cookie(SESSION_COOKIE_NAME, sessionId, sessionCookieOptions());
-      res.status(HTTP.STATUS.CREATED).json({ user: toUserResponse(user) });
+      sendSession(req, res, HTTP.STATUS.CREATED, user, sessionId);
     } catch (err) {
       const code =
         err && typeof err === 'object' && 'code' in err
@@ -140,15 +168,14 @@ function createAuthHandlers({
       'User logged in',
     );
     trackEvent(user.id, ANALYTICS_EVENTS.USER_LOGGED_IN);
-    res.cookie(SESSION_COOKIE_NAME, sessionId, sessionCookieOptions());
-    res.json({ user: toUserResponse(user) });
+    sendSession(req, res, HTTP.STATUS.OK, user, sessionId);
   }
 
   async function logout(req: Request, res: Response): Promise<void> {
-    const token = req.cookies?.[SESSION_COOKIE_NAME] as string | undefined;
-    if (token && typeof token === 'string') {
+    const parsed = parseSessionToken(req);
+    if (parsed.kind === 'token') {
       try {
-        await authRepo.deleteSession(token);
+        await authRepo.deleteSession(parsed.token);
       } catch (err) {
         logger.error({ err }, 'Failed to delete session on logout');
       }
@@ -157,7 +184,10 @@ function createAuthHandlers({
     logger.info({ event: 'logout', userId, ip: req.ip }, 'User logged out');
     if (userId) trackEvent(userId, ANALYTICS_EVENTS.USER_LOGGED_OUT);
     void clearSession();
-    res.clearCookie(SESSION_COOKIE_NAME, clearCookieOptions());
+    // A bearer client has no cookie to clear. Every other case clears it as before.
+    if (!(parsed.kind === 'token' && parsed.source === 'bearer')) {
+      res.clearCookie(SESSION_COOKIE_NAME, clearCookieOptions());
+    }
     res.status(HTTP.STATUS.NO_CONTENT).send();
   }
 
@@ -293,13 +323,12 @@ function createAuthHandlers({
       // issue a fresh one so the user who changed their password stays logged in.
       await authRepo.deleteSessionsForUser(userId);
       const sessionId = await authRepo.createSession(userId);
-      res.cookie(SESSION_COOKIE_NAME, sessionId, sessionCookieOptions());
       logger.info(
         { event: 'password_changed', userId },
         'User changed password',
       );
       trackEvent(userId, ANALYTICS_EVENTS.PROFILE_UPDATED);
-      res.json({ user: toUserResponse(updated) });
+      sendSession(req, res, HTTP.STATUS.OK, updated, sessionId);
       return;
     }
 

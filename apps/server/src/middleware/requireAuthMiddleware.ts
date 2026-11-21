@@ -6,8 +6,8 @@ import {
   createErrorResponse,
 } from 'app/constants/errorCodesConstants.js';
 import { HTTP } from 'app/constants/httpConstants.js';
-import { SESSION_COOKIE_NAME } from 'app/constants/sessionConstants.js';
 import type { AuthRepo } from 'app/repositories/authRepository.js';
+import { parseSessionToken } from 'app/services/parseSessionTokenParser.js';
 
 // Sentry is optional; import lazily to avoid hard dependency when DSN not set
 async function setSentryUser(id: string, email: string): Promise<void> {
@@ -32,7 +32,8 @@ async function clearSentryUser(): Promise<void> {
 
 /**
  * Builds the loadSession middleware bound to an auth repo. Populates req.user
- * for a valid session cookie and never blocks unauthenticated requests.
+ * for a valid session cookie or bearer token and never blocks unauthenticated
+ * requests. Answers 400 when both a cookie and a bearer token are sent.
  */
 function createLoadSession(authRepo: Pick<AuthRepo, 'getSessionWithUser'>) {
   return async function loadSession(
@@ -40,11 +41,23 @@ function createLoadSession(authRepo: Pick<AuthRepo, 'getSessionWithUser'>) {
     res: Response,
     next: NextFunction,
   ): Promise<void> {
-    const token = req.cookies?.[SESSION_COOKIE_NAME] as string | undefined;
-    if (!token || typeof token !== 'string') {
+    const parsed = parseSessionToken(req);
+    if (parsed.kind === 'conflict') {
+      res
+        .status(HTTP.STATUS.BAD_REQUEST)
+        .json(
+          createErrorResponse(
+            ERROR_CODES.AUTH.AMBIGUOUS_CREDENTIALS,
+            'Send either a session cookie or a bearer token, not both',
+          ),
+        );
+      return;
+    }
+    if (parsed.kind === 'none') {
       next();
       return;
     }
+    const { token } = parsed;
     try {
       const user = await authRepo.getSessionWithUser(token);
       if (user) {
