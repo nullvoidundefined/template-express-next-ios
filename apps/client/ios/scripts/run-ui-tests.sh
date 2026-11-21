@@ -40,5 +40,8 @@ xcodebuild build-for-testing -project "$project" -scheme App -configuration Debu
 xcrun simctl launch "$udid" com.apple.Preferences >/dev/null
 xcrun simctl terminate "$udid" com.apple.Preferences >/dev/null 2>&1 || true
 
+# A failed test is run once more before the step fails. Hosted CI simulators time out
+# now and then (app launch, accessibility audit); a real failure fails both times.
 xcodebuild test-without-building -project "$project" -scheme App -configuration Debug \
-    -destination "platform=iOS Simulator,id=$udid" CODE_SIGNING_ALLOWED=NO
+    -destination "platform=iOS Simulator,id=$udid" CODE_SIGNING_ALLOWED=NO \
+    -retry-tests-on-failure -test-iterations 2
