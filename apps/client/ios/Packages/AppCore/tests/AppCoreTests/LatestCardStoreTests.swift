@@ -10,7 +10,9 @@ private func makeCard(id: String, title: String) throws -> Card {
     return try JSONDecoder().decode(Card.self, from: Data(json.utf8))
 }
 
-private func withSuite(_ body: (UserDefaults, String) async throws -> Void) async throws {
+@MainActor private func withSuite(
+    _ body: @MainActor (UserDefaults, String) async throws -> Void
+) async throws {
     let name = UUID().uuidString
     let defaults = try #require(UserDefaults(suiteName: name))
     defer { defaults.removePersistentDomain(forName: name) }
