@@ -153,4 +153,50 @@ private struct Harness {
         #expect(harness.viewModel.state == .signedOut(notice: unauthorizedNotice))
         #expect(try harness.store.read() == nil)
     }
+
+    @Test func restoreWithServerErrorSignsOutWithNotice() async throws {
+        let harness = Harness()
+        try harness.store.save(makeTestToken())
+        await harness.fake.queueFetchCurrentUser(.failure(.server(code: "X", message: "y", status: 400)))
+
+        await harness.viewModel.restore()
+
+        #expect(harness.viewModel.state == .signedOut(notice: "Something went wrong. Log in again."))
+        #expect(try harness.store.read() == nil)
+    }
+
+    @Test func restoreWithDecodingErrorSignsOutWithNotice() async throws {
+        let harness = Harness()
+        try harness.store.save(makeTestToken())
+        await harness.fake.queueFetchCurrentUser(.failure(.decoding))
+
+        await harness.viewModel.restore()
+
+        #expect(harness.viewModel.state == .signedOut(notice: "Something went wrong. Log in again."))
+        #expect(try harness.store.read() == nil)
+    }
+
+    @Test func clearErrorRemovesMessage() async {
+        let harness = Harness()
+        await harness.fake.queueLogin(.failure(.network))
+        await harness.viewModel.login(email: "ada@example.com", password: UUID().uuidString)
+        #expect(harness.viewModel.errorMessage != nil)
+        let before = harness.viewModel.state
+
+        harness.viewModel.clearError()
+
+        #expect(harness.viewModel.errorMessage == nil)
+        #expect(harness.viewModel.state == before)
+    }
+
+    @Test func handleUnauthorizedClearsErrorMessage() async {
+        let harness = Harness()
+        await harness.fake.queueLogin(.failure(.network))
+        await harness.viewModel.login(email: "ada@example.com", password: UUID().uuidString)
+        #expect(harness.viewModel.errorMessage != nil)
+
+        harness.viewModel.handleUnauthorized()
+
+        #expect(harness.viewModel.errorMessage == nil)
+    }
 }

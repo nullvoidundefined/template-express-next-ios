@@ -176,3 +176,10 @@ private func errorBody(code: String, message: String) -> Data {
     #expect(request.header("Authorization") == "Bearer \(token)")
     #expect(request.header("X-Requested-With") == "XMLHttpRequest")
 }
+
+@Test func sessionConfigurationStoresAndSendsNoCookies() {
+    let configuration = URLSessionAPIClient.makeSessionConfiguration()
+    #expect(configuration.httpCookieStorage == nil)
+    #expect(configuration.httpShouldSetCookies == false)
+    #expect(configuration.httpCookieAcceptPolicy == .never)
+}

@@ -1,5 +1,6 @@
 import AppCore
 import Foundation
+import Security
 import Testing
 
 enum StoreKind: String, CaseIterable, Sendable, CustomTestStringConvertible {
@@ -57,4 +58,26 @@ func clearWhenEmptyDoesNotThrow(kind: StoreKind) throws {
     let store = kind.makeStore()
     try store.clear()
     try store.clear()
+}
+
+@Test func keychainItemUsesExpectedAttributes() throws {
+    let service = "AppCoreTests-\(UUID())"
+    let store = KeychainSessionTokenStore(service: service)
+    defer { try? store.clear() }
+    try store.save(UUID().uuidString)
+
+    let query: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword,
+        kSecAttrService as String: service,
+        kSecReturnAttributes as String: true,
+    ]
+    var result: CFTypeRef?
+    let status = SecItemCopyMatching(query as CFDictionary, &result)
+    #expect(status == errSecSuccess)
+    let attributes = try #require(result as? [String: Any])
+    #expect(attributes[kSecAttrAccount as String] as? String == "session-token")
+    #expect(
+        attributes[kSecAttrAccessible as String] as? String
+            == kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String
+    )
 }
