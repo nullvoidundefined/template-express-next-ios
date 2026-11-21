@@ -200,3 +200,141 @@ private struct Harness {
         #expect(harness.viewModel.errorMessage == nil)
     }
 }
+
+@MainActor
+private final class SignedOutCounter {
+    private(set) var count = 0
+    func record() { count += 1 }
+}
+
+@MainActor
+private struct SignOutHarness {
+    let counter = SignedOutCounter()
+    let fake = FakeAPIClient()
+    let store = InMemorySessionTokenStore()
+    let viewModel: AuthViewModel
+
+    init() {
+        let counter = counter
+        viewModel = AuthViewModel(
+            apiClient: fake,
+            tokenStore: store,
+            onSignedOut: { counter.record() }
+        )
+    }
+}
+
+@MainActor
+@Suite struct AuthViewModelSignedOutCallbackTests {
+    @Test func logoutCallsOnSignedOutOnce() async {
+        let harness = SignOutHarness()
+        await harness.fake.queueLogout(.success(()))
+
+        await harness.viewModel.logout()
+
+        #expect(harness.viewModel.state == .signedOut(notice: nil))
+        #expect(harness.counter.count == 1)
+    }
+
+    @Test func logoutCallsOnSignedOutWhenServerCallFails() async {
+        let harness = SignOutHarness()
+        await harness.fake.queueLogout(.failure(.network))
+
+        await harness.viewModel.logout()
+
+        #expect(harness.viewModel.state == .signedOut(notice: nil))
+        #expect(harness.counter.count == 1)
+    }
+
+    @Test func handleUnauthorizedCallsOnSignedOutOnce() {
+        let harness = SignOutHarness()
+
+        harness.viewModel.handleUnauthorized()
+
+        #expect(harness.counter.count == 1)
+    }
+
+    @Test func restoreWithoutTokenCallsOnSignedOutOnce() async {
+        let harness = SignOutHarness()
+
+        await harness.viewModel.restore()
+
+        #expect(harness.viewModel.state == .signedOut(notice: nil))
+        #expect(harness.counter.count == 1)
+    }
+
+    @Test func restoreWithRejectedTokenCallsOnSignedOutOnce() async throws {
+        let harness = SignOutHarness()
+        try harness.store.save(makeTestToken())
+        await harness.fake.queueFetchCurrentUser(.failure(.unauthorized))
+
+        await harness.viewModel.restore()
+
+        #expect(harness.viewModel.state == .signedOut(notice: nil))
+        #expect(harness.counter.count == 1)
+    }
+
+    @Test func restoreWithOtherErrorCallsOnSignedOutOnce() async throws {
+        let harness = SignOutHarness()
+        try harness.store.save(makeTestToken())
+        await harness.fake.queueFetchCurrentUser(.failure(.decoding))
+
+        await harness.viewModel.restore()
+
+        #expect(harness.viewModel.state != .checking)
+        #expect(harness.viewModel.state != .unreachable)
+        #expect(harness.counter.count == 1)
+    }
+
+    @Test func restoreSignedInDoesNotCallOnSignedOut() async throws {
+        let harness = SignOutHarness()
+        let user = makeTestUser()
+        try harness.store.save(makeTestToken())
+        await harness.fake.queueFetchCurrentUser(.success(user))
+
+        await harness.viewModel.restore()
+
+        #expect(harness.viewModel.state == .signedIn(user))
+        #expect(harness.counter.count == 0)
+    }
+
+    @Test func restoreUnreachableDoesNotCallOnSignedOut() async throws {
+        let harness = SignOutHarness()
+        try harness.store.save(makeTestToken())
+        await harness.fake.queueFetchCurrentUser(.failure(.network))
+
+        await harness.viewModel.restore()
+
+        #expect(harness.viewModel.state == .unreachable)
+        #expect(harness.counter.count == 0)
+    }
+
+    @Test func failedLoginDoesNotCallOnSignedOut() async {
+        let harness = SignOutHarness()
+        await harness.fake.queueLogin(.failure(.network))
+
+        await harness.viewModel.login(email: "ada@example.com", password: makeTestToken())
+
+        #expect(harness.counter.count == 0)
+    }
+
+    @Test func failedRegisterDoesNotCallOnSignedOut() async {
+        let harness = SignOutHarness()
+        await harness.fake.queueRegister(.failure(.network))
+
+        await harness.viewModel.register(email: "ada@example.com", password: makeTestToken())
+
+        #expect(harness.counter.count == 0)
+    }
+
+    @Test func successfulLoginDoesNotCallOnSignedOut() async {
+        let harness = SignOutHarness()
+        let user = makeTestUser()
+        await harness.fake.queueLogin(.success(user))
+
+        await harness.viewModel.login(email: "ada@example.com", password: makeTestToken())
+
+        #expect(harness.viewModel.state == .signedIn(user))
+        #expect(harness.counter.count == 0)
+    }
+}

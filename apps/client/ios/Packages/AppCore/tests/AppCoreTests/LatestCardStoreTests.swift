@@ -78,6 +78,46 @@ private func makeCard(id: String, title: String) throws -> Card {
     }
 }
 
+@MainActor @Test func storeClearsCardOnClearContext() async throws {
+    try await withSuite { defaults, _ in
+        let card = try makeCard(id: "a", title: "First")
+        let store = LatestCardStore(defaults: defaults)
+        store.receive(context: try CardContext.encode(card))
+        #expect(store.card == card)
+
+        store.receive(context: CardContext.encodeClear())
+
+        #expect(store.card == nil)
+        #expect(LatestCardStore(defaults: defaults).card == nil)
+    }
+}
+
+@MainActor @Test func storeClearMethodRemovesCardAndSavedCard() async throws {
+    try await withSuite { defaults, _ in
+        let card = try makeCard(id: "a", title: "First")
+        let store = LatestCardStore(defaults: defaults)
+        store.receive(context: try CardContext.encode(card))
+
+        store.clear()
+
+        #expect(store.card == nil)
+        #expect(LatestCardStore(defaults: defaults).card == nil)
+    }
+}
+
+@MainActor @Test func storeAcceptsNewCardAfterClear() async throws {
+    try await withSuite { defaults, _ in
+        let first = try makeCard(id: "a", title: "First")
+        let second = try makeCard(id: "b", title: "Second")
+        let store = LatestCardStore(defaults: defaults)
+        store.receive(context: try CardContext.encode(first))
+        store.clear()
+        store.receive(context: try CardContext.encode(second))
+        #expect(store.card == second)
+        #expect(LatestCardStore(defaults: defaults).card == second)
+    }
+}
+
 @MainActor @Test func storeWithCorruptSavedDataStartsEmpty() async throws {
     try await withSuite { defaults, name in
         let card = try makeCard(id: "a", title: "First")

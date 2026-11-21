@@ -119,6 +119,74 @@ private struct Harness {
         #expect(!harness.viewModel.isSending)
     }
 
+    @Test func endSessionDuringSendDropsCardAndDoesNotForward() async {
+        let harness = Harness()
+        await harness.fake.holdCreateDemoCard()
+        await harness.fake.queueCreateDemoCard(.success(makeTestCard()))
+
+        let pending = Task { await harness.viewModel.send(kind: .message) }
+        await harness.fake.waitForCreateDemoCardToBeEntered()
+        harness.viewModel.endSession()
+        await harness.fake.releaseCreateDemoCard()
+        await pending.value
+
+        #expect(harness.viewModel.lastCard == nil)
+        #expect(harness.link.receivedCards.isEmpty)
+        #expect(harness.viewModel.errorMessage == nil)
+        #expect(!harness.viewModel.isSending)
+    }
+
+    @Test func endSessionDuringFailingSendSetsNoError() async {
+        let harness = Harness()
+        await harness.fake.holdCreateDemoCard()
+        await harness.fake.queueCreateDemoCard(.failure(.network))
+
+        let pending = Task { await harness.viewModel.send(kind: .message) }
+        await harness.fake.waitForCreateDemoCardToBeEntered()
+        harness.viewModel.endSession()
+        await harness.fake.releaseCreateDemoCard()
+        await pending.value
+
+        #expect(harness.viewModel.errorMessage == nil)
+        #expect(harness.viewModel.lastCard == nil)
+        #expect(harness.link.receivedCards.isEmpty)
+    }
+
+    @Test func sendAfterEndSessionDoesNotCallAPI() async {
+        let harness = Harness()
+        await harness.fake.queueCreateDemoCard(.success(makeTestCard()))
+        harness.viewModel.endSession()
+
+        await harness.viewModel.send(kind: .message)
+
+        #expect(await harness.fake.createDemoCardCallCount == 0)
+        #expect(harness.viewModel.lastCard == nil)
+        #expect(harness.link.receivedCards.isEmpty)
+    }
+
+    @Test func endSessionDoesNotCallWatchLink() {
+        let harness = Harness()
+
+        harness.viewModel.endSession()
+
+        #expect(harness.link.clearCallCount == 0)
+        #expect(harness.link.receivedCards.isEmpty)
+    }
+
+    @Test func unauthorizedSendEndsSessionSoLaterSendDoesNotCallAPI() async {
+        let harness = Harness()
+        await harness.fake.queueCreateDemoCard(.failure(.unauthorized))
+        await harness.fake.queueCreateDemoCard(.success(makeTestCard()))
+
+        await harness.viewModel.send(kind: .message)
+        await harness.viewModel.send(kind: .message)
+
+        #expect(harness.counter.count == 1)
+        #expect(await harness.fake.createDemoCardCallCount == 1)
+        #expect(harness.viewModel.lastCard == nil)
+        #expect(harness.link.receivedCards.isEmpty)
+    }
+
     @Test func successfulSendClearsPreviousError() async {
         let harness = Harness()
         await harness.fake.queueCreateDemoCard(.failure(.network))
