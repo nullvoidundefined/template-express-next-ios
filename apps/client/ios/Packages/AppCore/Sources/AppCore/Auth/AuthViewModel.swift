@@ -14,10 +14,16 @@ public final class AuthViewModel {
     public private(set) var state: AuthState = .checking
 
     private let apiClient: APIClient
+    private let onSignedOut: @MainActor () -> Void
     private let tokenStore: SessionTokenStore
 
-    public init(apiClient: APIClient, tokenStore: SessionTokenStore) {
+    public init(
+        apiClient: APIClient,
+        tokenStore: SessionTokenStore,
+        onSignedOut: @escaping @MainActor () -> Void = {}
+    ) {
         self.apiClient = apiClient
+        self.onSignedOut = onSignedOut
         self.tokenStore = tokenStore
     }
 
@@ -28,7 +34,7 @@ public final class AuthViewModel {
     public func handleUnauthorized() {
         try? tokenStore.clear()
         errorMessage = nil
-        state = .signedOut(notice: "You were signed out. Log in again.")
+        signOut(notice: "You were signed out. Log in again.")
     }
 
     public func login(email: String, password: String) async {
@@ -39,7 +45,7 @@ public final class AuthViewModel {
         try? await apiClient.logout()
         try? tokenStore.clear()
         errorMessage = nil
-        state = .signedOut(notice: nil)
+        signOut(notice: nil)
     }
 
     public func register(email: String, password: String) async {
@@ -48,20 +54,25 @@ public final class AuthViewModel {
 
     public func restore() async {
         guard let token = try? tokenStore.read(), !token.isEmpty else {
-            state = .signedOut(notice: nil)
+            signOut(notice: nil)
             return
         }
         state = .checking
         do {
             state = .signedIn(try await apiClient.fetchCurrentUser())
         } catch APIError.unauthorized {
-            state = .signedOut(notice: nil)
+            signOut(notice: nil)
         } catch APIError.network {
             state = .unreachable
         } catch {
             try? tokenStore.clear()
-            state = .signedOut(notice: "Something went wrong. Log in again.")
+            signOut(notice: "Something went wrong. Log in again.")
         }
+    }
+
+    private func signOut(notice: String?) {
+        state = .signedOut(notice: notice)
+        onSignedOut()
     }
 
     private func submit(_ action: () async throws -> User) async {

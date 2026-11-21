@@ -7,6 +7,7 @@ public final class HomeViewModel {
     public private(set) var lastCard: Card?
     public private(set) var lastDelivery: WatchDelivery?
 
+    private var isSessionEnded = false
     private let apiClient: APIClient
     private let onUnauthorized: @MainActor () -> Void
     private let watchLink: WatchLink
@@ -21,20 +22,29 @@ public final class HomeViewModel {
         self.watchLink = watchLink
     }
 
+    public func endSession() {
+        isSessionEnded = true
+    }
+
     public func send(kind: CardKind) async {
-        guard !isSending else { return }
+        guard !isSending, !isSessionEnded else { return }
         isSending = true
         errorMessage = nil
         defer { isSending = false }
         do {
             let card = try await apiClient.createDemoCard(kind: kind)
+            guard !isSessionEnded else { return }
             lastCard = card
             lastDelivery = watchLink.send(card)
         } catch APIError.unauthorized {
-            onUnauthorized()
+            let wasEnded = isSessionEnded
+            endSession()
+            if !wasEnded { onUnauthorized() }
         } catch let error as APIError {
+            guard !isSessionEnded else { return }
             errorMessage = Self.message(for: error)
         } catch {
+            guard !isSessionEnded else { return }
             errorMessage = Self.message(for: .network)
         }
     }

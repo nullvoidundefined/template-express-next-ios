@@ -20,21 +20,41 @@ final class WatchContextReceiver: NSObject, WCSessionDelegate {
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: (any Error)?
     ) {
-        guard let data = session.receivedApplicationContext[CardContext.key] as? Data else { return }
-        deliver(data)
+        deliver(Self.change(in: session.receivedApplicationContext))
     }
 
     nonisolated func session(
         _ session: WCSession,
         didReceiveApplicationContext applicationContext: [String: Any]
     ) {
-        guard let data = applicationContext[CardContext.key] as? Data else { return }
-        deliver(data)
+        deliver(Self.change(in: applicationContext))
     }
 
-    private nonisolated func deliver(_ data: Data) {
-        Task { @MainActor in
-            store.receive(context: [CardContext.key: data])
+    /// What a received context asks the store to do. Sendable, so it can cross to the main actor.
+    private enum Change: Sendable {
+        case card(Data)
+        case clear
+        case none
+    }
+
+    private nonisolated static func change(in context: [String: Any]) -> Change {
+        if CardContext.isClear(context) { return .clear }
+        if let data = context[CardContext.key] as? Data { return .card(data) }
+        return .none
+    }
+
+    private nonisolated func deliver(_ change: Change) {
+        switch change {
+        case .card(let data):
+            Task { @MainActor in
+                store.receive(context: [CardContext.key: data])
+            }
+        case .clear:
+            Task { @MainActor in
+                store.clear()
+            }
+        case .none:
+            break
         }
     }
 }

@@ -4,5 +4,6 @@ public enum WatchDelivery: Equatable, Sendable {
 }
 
 public protocol WatchLink: Sendable {
+    func clear() -> WatchDelivery
     func send(_ card: Card) -> WatchDelivery
 }

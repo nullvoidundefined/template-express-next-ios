@@ -6,10 +6,24 @@ import Foundation
 final class FakeWatchLink: WatchLink, @unchecked Sendable {
     private let lock = NSLock()
     private var delivery: WatchDelivery
+    private var clearCalls = 0
     private var received: [Card] = []
 
     init(delivery: WatchDelivery = .sent) {
         self.delivery = delivery
+    }
+
+    var clearCallCount: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return clearCalls
+    }
+
+    func clear() -> WatchDelivery {
+        lock.lock()
+        defer { lock.unlock() }
+        clearCalls += 1
+        return delivery
     }
 
     var receivedCards: [Card] {

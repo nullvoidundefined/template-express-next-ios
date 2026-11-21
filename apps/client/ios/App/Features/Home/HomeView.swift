@@ -47,6 +47,7 @@ struct HomeView: View {
                         .accessibilityIdentifier("home-error")
                 }
                 Button("Log out") {
+                    viewModel.endSession()
                     Task { await authViewModel.logout() }
                 }
                 .buttonStyle(.bordered)
