@@ -3,12 +3,15 @@ import SwiftUI
 
 @main
 struct TemplateApp: App {
-    @State private var authViewModel = AppEnvironment.makeAuthViewModel()
+    @State private var environment = AppEnvironment.make()
 
     var body: some Scene {
         WindowGroup {
-            RootView(viewModel: authViewModel)
-                .tint(.appTint)
+            RootView(
+                makeHomeViewModel: environment.makeHomeViewModel,
+                viewModel: environment.authViewModel
+            )
+            .tint(.appTint)
         }
     }
 }

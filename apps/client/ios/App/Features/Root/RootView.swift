@@ -2,6 +2,7 @@ import AppCore
 import SwiftUI
 
 struct RootView: View {
+    let makeHomeViewModel: () -> HomeViewModel
     let viewModel: AuthViewModel
 
     var body: some View {
@@ -15,16 +16,7 @@ struct RootView: View {
         case .checking:
             ProgressView("Loading")
         case .signedIn(let user):
-            VStack(spacing: 16) {
-                Text("Signed in as \(user.email)")
-                    .font(.headline)
-                Button("Log out") {
-                    Task { await viewModel.logout() }
-                }
-                .buttonStyle(.borderedProminent)
-                .accessibilityIdentifier("home-logout-button")
-            }
-            .padding()
+            HomeView(authViewModel: viewModel, email: user.email, makeViewModel: makeHomeViewModel)
         case .signedOut(let notice):
             NavigationStack {
                 LoginView(viewModel: viewModel, notice: notice)

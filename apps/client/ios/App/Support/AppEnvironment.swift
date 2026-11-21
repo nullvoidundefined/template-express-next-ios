@@ -2,13 +2,18 @@ import AppCore
 import Foundation
 
 @MainActor
-enum AppEnvironment {
+struct AppEnvironment {
+    let authViewModel: AuthViewModel
+    let makeHomeViewModel: () -> HomeViewModel
+
     private static let keychainService = Bundle.main.bundleIdentifier ?? "com.example.templateapp"
 
-    static func makeAuthViewModel() -> AuthViewModel {
+    static func make() -> AppEnvironment {
         #if DEBUG
             if ProcessInfo.processInfo.arguments.contains("-uiTestStubAPI") {
-                return AuthViewModel(apiClient: StubAPIClient(), tokenStore: InMemorySessionTokenStore())
+                return make(
+                    apiClient: StubAPIClient(), tokenStore: InMemorySessionTokenStore(),
+                    watchLink: UnavailableWatchLink())
             }
         #endif
         let tokenStore = KeychainSessionTokenStore(service: keychainService)
@@ -16,7 +21,22 @@ enum AppEnvironment {
             baseURL: apiBaseURL(),
             session: URLSession(configuration: URLSessionAPIClient.makeSessionConfiguration()),
             tokenStore: tokenStore)
-        return AuthViewModel(apiClient: apiClient, tokenStore: tokenStore)
+        WatchConnectivityLink.shared.activate()
+        return make(apiClient: apiClient, tokenStore: tokenStore, watchLink: WatchConnectivityLink.shared)
+    }
+
+    private static func make(
+        apiClient: APIClient, tokenStore: SessionTokenStore, watchLink: WatchLink
+    ) -> AppEnvironment {
+        let authViewModel = AuthViewModel(apiClient: apiClient, tokenStore: tokenStore)
+        return AppEnvironment(
+            authViewModel: authViewModel,
+            makeHomeViewModel: {
+                HomeViewModel(
+                    apiClient: apiClient,
+                    onUnauthorized: { authViewModel.handleUnauthorized() },
+                    watchLink: watchLink)
+            })
     }
 
     private static func apiBaseURL() -> URL {
