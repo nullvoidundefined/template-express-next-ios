@@ -43,6 +43,49 @@ jobs:
       - name: Build
         run: pnpm run build
 
+  integration:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: template_integration
+          # Trust auth: this throwaway container needs no password, so none is written here.
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-retries 5
+          --health-timeout 5s
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The integration suite skips itself when DATABASE_URL is unset, so this job
+      # is the only place it runs in CI. It migrates and truncates its own database.
+      - name: Run server integration tests
+        run: |
+          export SESSION_SECRET="$(openssl rand -hex 32)"
+          pnpm --filter ./apps/server run test:integration
+        env:
+          DATABASE_URL: postgresql://postgres@localhost:5432/template_integration
+          NODE_ENV: test
+
   e2e:
     needs: build-and-test
     runs-on: ubuntu-24.04
