@@ -9,6 +9,12 @@ private final class UnauthorizedCounter {
 }
 
 @MainActor
+private final class ReentrantSendBox {
+    var task: Task<Void, Never>?
+    var viewModel: HomeViewModel?
+}
+
+@MainActor
 private struct Harness {
     let counter = UnauthorizedCounter()
     let fake = FakeAPIClient()
@@ -185,6 +191,50 @@ private struct Harness {
         #expect(await harness.fake.createDemoCardCallCount == 1)
         #expect(harness.viewModel.lastCard == nil)
         #expect(harness.link.receivedCards.isEmpty)
+    }
+
+    @Test func unauthorizedAfterEndSessionDoesNotCallOnUnauthorized() async {
+        let harness = Harness()
+        await harness.fake.holdCreateDemoCard()
+        await harness.fake.queueCreateDemoCard(.failure(.unauthorized))
+
+        let pending = Task { await harness.viewModel.send(kind: .message) }
+        await harness.fake.waitForCreateDemoCardToBeEntered()
+        harness.viewModel.endSession()
+        await harness.fake.releaseCreateDemoCard()
+        await pending.value
+
+        #expect(harness.counter.count == 0)
+        #expect(harness.viewModel.errorMessage == nil)
+        #expect(harness.viewModel.lastCard == nil)
+        #expect(!harness.viewModel.isSending)
+        #expect(harness.link.receivedCards.isEmpty)
+    }
+
+    @Test func unauthorizedEndsSessionBeforeOnUnauthorizedRuns() async {
+        let fake = FakeAPIClient()
+        let link = FakeWatchLink()
+        let counter = UnauthorizedCounter()
+        let box = ReentrantSendBox()
+        let viewModel = HomeViewModel(
+            apiClient: fake,
+            onUnauthorized: {
+                counter.record()
+                box.task = Task { await box.viewModel?.send(kind: .prompt) }
+            },
+            watchLink: link
+        )
+        box.viewModel = viewModel
+        await fake.queueCreateDemoCard(.failure(.unauthorized))
+        await fake.queueCreateDemoCard(.success(makeTestCard()))
+
+        await viewModel.send(kind: .message)
+        await box.task?.value
+
+        #expect(counter.count == 1)
+        #expect(await fake.createDemoCardCallCount == 1)
+        #expect(viewModel.lastCard == nil)
+        #expect(link.receivedCards.isEmpty)
     }
 
     @Test func successfulSendClearsPreviousError() async {
