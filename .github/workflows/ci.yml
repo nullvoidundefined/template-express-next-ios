@@ -193,6 +193,10 @@ jobs:
           xcodebuild -project apps/client/ios/TemplateApp.xcodeproj -scheme WatchApp -configuration Debug
           -destination 'generic/platform=watchOS Simulator' build CODE_SIGNING_ALLOWED=NO
 
+      - name: Test iPhone UI
+        if: steps.detect.outputs.changed == 'true'
+        run: bash apps/client/ios/scripts/run-ui-tests.sh
+
       - name: Lint Swift format
         if: steps.detect.outputs.changed == 'true'
         run: swift format lint --strict --recursive apps/client/ios

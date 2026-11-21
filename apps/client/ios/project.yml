@@ -47,6 +47,16 @@ targets:
                 ;;
             esac
           fi
+  AppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [tests/AppUITests]
+    dependencies:
+      - target: App
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.templateapp.uitests
   WatchApp:
     type: application
     platform: watchOS
@@ -65,6 +75,8 @@ schemes:
     build:
       targets:
         App: all
+    test:
+      targets: [AppUITests]
   WatchApp:
     build:
       targets:
