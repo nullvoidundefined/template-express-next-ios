@@ -40,7 +40,7 @@ commit-msg:
       run: |
         subject=$(head -1 {1})
         if echo "$subject" | grep -qE '^(fix|bug|bugfix|hotfix)(\(.+\))?!?:'; then
-          if ! git diff --cached --name-only | grep -qE '\.(test|spec)\.(ts|tsx|js|jsx)$'; then
+          if ! git diff --cached --name-only | grep -qE '\.(test|spec)\.(ts|tsx|js|jsx)$|(^|/)tests/.*\.swift$'; then
             echo 'Commits with fix:/bug:/bugfix:/hotfix: subjects require at least one test file staged.'
             exit 1
           fi
