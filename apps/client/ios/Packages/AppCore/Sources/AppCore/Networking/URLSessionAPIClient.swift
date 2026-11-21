@@ -6,6 +6,14 @@ public final class URLSessionAPIClient: APIClient {
         let user: User
     }
 
+    private struct DemoCardRequest: Encodable {
+        let kind: CardKind
+    }
+
+    private struct DemoCardResponse: Decodable {
+        let card: Card
+    }
+
     private struct CurrentUserResponse: Decodable {
         let user: User
     }
@@ -45,8 +53,9 @@ public final class URLSessionAPIClient: APIClient {
     }
 
     public func createDemoCard(kind: CardKind) async throws -> Card {
-        // Implemented with the demo cards screen.
-        throw APIError.decoding
+        let body = try JSONEncoder().encode(DemoCardRequest(kind: kind))
+        let data = try await send(.post, path: "/v1/demo/cards", body: body)
+        return try decode(DemoCardResponse.self, from: data).card
     }
 
     public func fetchCurrentUser() async throws -> User {
