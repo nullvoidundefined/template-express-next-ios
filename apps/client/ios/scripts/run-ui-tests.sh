@@ -26,5 +26,9 @@ fi
 IFS=$'\t' read -r udid name runtime <<<"$choice"
 echo "Using simulator: $name, $runtime, $udid"
 
+# Boot the simulator and wait until it has finished booting. A cold simulator on a
+# CI runner is slow enough right after launch that the accessibility audit times out.
+xcrun simctl bootstatus "$udid" -b
+
 xcodebuild test -project "$project" -scheme App -configuration Debug \
     -destination "platform=iOS Simulator,id=$udid" CODE_SIGNING_ALLOWED=NO
