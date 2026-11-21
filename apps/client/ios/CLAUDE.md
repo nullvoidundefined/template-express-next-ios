@@ -25,6 +25,7 @@
 pnpm ios:generate       # xcodegen generate
 pnpm ios:test           # swift test on AppCore (runs on macOS, no simulator)
 pnpm ios:format:check   # swift format lint --strict
+pnpm ios:verify-config  # Release needs https, ATS exception is Debug-only (run after generate)
 ```
 
 ## Renaming the app

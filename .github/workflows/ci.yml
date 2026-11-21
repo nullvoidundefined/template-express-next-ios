@@ -184,15 +184,19 @@ jobs:
       - name: Build iPhone app
         if: steps.detect.outputs.changed == 'true'
         run: >-
-          xcodebuild -project apps/client/ios/TemplateApp.xcodeproj -scheme App
+          xcodebuild -project apps/client/ios/TemplateApp.xcodeproj -scheme App -configuration Debug
           -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
 
       - name: Build Watch app
         if: steps.detect.outputs.changed == 'true'
         run: >-
-          xcodebuild -project apps/client/ios/TemplateApp.xcodeproj -scheme WatchApp
+          xcodebuild -project apps/client/ios/TemplateApp.xcodeproj -scheme WatchApp -configuration Debug
           -destination 'generic/platform=watchOS Simulator' build CODE_SIGNING_ALLOWED=NO
 
       - name: Lint Swift format
         if: steps.detect.outputs.changed == 'true'
         run: swift format lint --strict --recursive apps/client/ios
+
+      - name: Verify build configuration
+        if: steps.detect.outputs.changed == 'true'
+        run: bash apps/client/ios/scripts/verify-build-config.sh

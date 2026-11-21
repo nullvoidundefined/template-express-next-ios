@@ -1,6 +1,8 @@
 import Foundation
 
-// Mirrors packages/types/src/cardTypes.ts.
+// Matches the card shape the demo cards endpoint will return:
+// { body, createdAt, id, kind, title }, with kind "message" or "prompt".
+// packages/types/src/cardTypes.ts is added with that endpoint and must stay in step with this file.
 public enum CardKind: String, Codable, Sendable {
     case message
     case prompt
