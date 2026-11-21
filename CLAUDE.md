@@ -49,6 +49,7 @@ These apply to the whole repo. Additional non-negotiables specific to each works
 30. **Sentry on both server and client from day one.** Initialize before any business logic. Set user context in `loadSession`. Upload source maps in CI on every production deploy.
 31. **Commit `pnpm-lock.yaml` with every `package.json` change.** CI uses `--frozen-lockfile`.
 32. **Build runs on pre-push.** The lefthook `pre-push` hook runs `pnpm build`. A broken build never lands on `main`.
+33. **Native clients use the bearer transport.** The iPhone app authenticates with `X-Session-Transport: token` and `Authorization: Bearer`; the web client keeps the `sid` cookie. Never return `sessionToken` in a response without the opt-in header. The Watch never talks to the server.
 
 ---
 
@@ -56,6 +57,7 @@ These apply to the whole repo. Additional non-negotiables specific to each works
 
 - **Monorepo:** pnpm workspaces. `apps/server/` (Express 5 + TypeScript), `apps/client/web/` (Next.js 15), `packages/tokens/` (shared design tokens), `packages/types/` (shared TypeScript types), `packages/constants/` (shared constants including analytics event names).
 - **Frontend:** Next.js 15 App Router, React 19, SCSS Modules, TanStack Query, Radix UI primitives, Vitest + React Testing Library, Playwright.
+- **Native:** `apps/client/ios/` is SwiftUI (iPhone app and Watch app) with the `AppCore` Swift package, XcodeGen, Swift Testing, and XCUITest.
 - **Design tokens:** `packages/tokens/` is the single source of truth for all visual values. The web client consumes `dist/_tokens.scss` (CSS custom properties).
 - **Backend:** Express 5, TypeScript, Zod, Pino, `pg` (raw SQL), Anthropic SDK where applicable.
 - **Database:** PostgreSQL on Neon. Migrations via `node-pg-migrate` (ESM). No ORM.
@@ -74,6 +76,8 @@ pnpm test                   # Run server unit tests
 pnpm test:coverage          # Unit tests with coverage
 pnpm ios:generate           # Generate the Xcode project with XcodeGen
 pnpm ios:test               # Run the AppCore Swift tests
+pnpm ios:test:ui            # Run the XCUITest UI test on an iPhone simulator
+pnpm ios:verify-config      # Check Release needs https and ATS is Debug-only
 pnpm ios:format:check       # swift format lint
 pnpm --filter server run test:integration
 pnpm --filter server run migrate:up

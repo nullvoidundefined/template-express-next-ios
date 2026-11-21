@@ -6,6 +6,8 @@ Auto-loaded when working anywhere inside `apps/client/`. The root `../../CLAUDE.
 
 If a rule here and the workspace file conflict, this file wins and the conflict is a bug to file. If a rule here and the root file conflict, the root file wins.
 
+This file describes the web client. Native work is covered by `apps/client/ios/CLAUDE.md`.
+
 ---
 
 ## Directory Structure
