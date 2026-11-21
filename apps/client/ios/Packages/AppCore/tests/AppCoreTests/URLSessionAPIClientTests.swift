@@ -183,3 +183,37 @@ private func errorBody(code: String, message: String) -> Data {
     #expect(configuration.httpShouldSetCookies == false)
     #expect(configuration.httpCookieAcceptPolicy == .never)
 }
+
+@Test func createDemoCardPostsKindAndDecodesCard() async throws {
+    let harness = makeHarness()
+    let token = makeTestToken()
+    try harness.store.save(token)
+    let card: [String: Any] = [
+        "body": "Reply when you are ready.",
+        "createdAt": "2026-01-03T00:00:00.000Z",
+        "id": UUID().uuidString.lowercased(),
+        "kind": "prompt",
+        "title": "A prompt for you",
+    ]
+    harness.stub.respond(status: 201, body: jsonData(["card": card]))
+
+    let result = try await harness.client.createDemoCard(kind: .prompt)
+
+    let request = try #require(harness.stub.lastRequest)
+    #expect(request.url.path == "/v1/demo/cards")
+    #expect(request.method == "POST")
+    #expect(request.header("Authorization") == "Bearer \(token)")
+    #expect(request.header("X-Requested-With") == "XMLHttpRequest")
+    #expect(request.header("X-Session-Transport") == "token")
+    #expect(request.header("Accept") == "application/json")
+    #expect(request.header("Content-Type")?.hasPrefix("application/json") == true)
+    #expect(request.header("Idempotency-Key") == nil)
+    let sent = try #require(request.body)
+    let sentObject = try #require(try JSONSerialization.jsonObject(with: sent) as? [String: String])
+    #expect(sentObject == ["kind": "prompt"])
+    #expect(result.kind == .prompt)
+    #expect(result.title == "A prompt for you")
+    #expect(result.body == "Reply when you are ready.")
+    #expect(result.id == card["id"] as? String)
+    #expect(result.createdAt == "2026-01-03T00:00:00.000Z")
+}

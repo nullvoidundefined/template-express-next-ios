@@ -27,6 +27,13 @@ final class AuthFlowUITests: XCTestCase {
 
         submit.tap()
 
+        let sendMessage = app.buttons["home-send-message-button"]
+        XCTAssertTrue(sendMessage.waitForExistence(timeout: 10))
+        sendMessage.tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["home-last-card"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.descendants(matching: .any)["home-watch-status"].waitForExistence(timeout: 10))
+
         let logout = app.buttons["home-logout-button"]
         XCTAssertTrue(logout.waitForExistence(timeout: 10))
         try app.performAccessibilityAudit()
