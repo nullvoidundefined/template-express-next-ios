@@ -24,3 +24,9 @@ coverage/
 # Server local env
 server/.env
 .vercel
+
+# Native (Xcode and SwiftPM)
+*.xcodeproj
+.build/
+DerivedData/
+xcuserdata/

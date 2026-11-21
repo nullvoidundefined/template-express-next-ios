@@ -1,0 +1,4 @@
+// Release must be given an https:// origin, for example API_BASE_URL=https://api.example.com.
+// The "Require HTTPS API_BASE_URL" build phase fails the build otherwise.
+API_BASE_URL =
+ALLOW_LOCAL_NETWORKING = NO

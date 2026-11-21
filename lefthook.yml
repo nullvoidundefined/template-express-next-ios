@@ -13,8 +13,11 @@ pre-commit:
     format-web:
       glob: 'apps/client/web/**'
       run: pnpm --filter ./apps/client/web run format:check
+    format-swift:
+      glob: 'apps/client/ios/**/*.swift'
+      run: swift format lint --strict {staged_files}
     no-em-dash:
-      glob: '*.{ts,tsx,js,mjs,md,scss,css,yaml,yml}'
+      glob: '*.{ts,tsx,js,mjs,md,scss,css,yaml,yml,swift}'
       run: |
         EMDASH=$(printf '\xe2\x80\x94')
         if grep -rn "$EMDASH" {staged_files} 2>/dev/null; then
