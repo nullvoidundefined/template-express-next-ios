@@ -16,6 +16,7 @@ import { createAuthHandlers } from 'app/handlers/authHandler.js';
 import { createCheckoutHandler } from 'app/handlers/billing/billingHandler.js';
 import { createPortalHandler } from 'app/handlers/billing/portalHandler.js';
 import { createWebhookHandler } from 'app/handlers/billing/webhookHandler.js';
+import { createDemoHandlers } from 'app/handlers/demoHandler.js';
 import { createPostsHandlers } from 'app/handlers/postsHandler.js';
 import { csrfGuard } from 'app/middleware/csrfGuardMiddleware.js';
 import { errorHandler } from 'app/middleware/errorHandlerMiddleware.js';
@@ -34,6 +35,7 @@ import { createPostsRepo } from 'app/repositories/postsRepository.js';
 import type { PostsRepoDeps } from 'app/repositories/postsRepository.js';
 import { createAuthRouter } from 'app/routes/authRoutes.js';
 import { createBillingRouter } from 'app/routes/billingRoutes.js';
+import { createDemoRouter } from 'app/routes/demoRoutes.js';
 import { createPostsRouter } from 'app/routes/postsRoutes.js';
 import { createBillingService } from 'app/services/billingService.js';
 import { sendPasswordResetEmail } from 'app/services/emailService.js';
@@ -75,6 +77,8 @@ function createApp(deps: AppDeps) {
     createCheckoutSession: createCheckoutHandler({ getStripe }),
     createPortalSession: createPortalHandler({ billingRepo, getStripe }),
   });
+
+  const demoRouter = createDemoRouter(createDemoHandlers());
 
   const postsRepo = createPostsRepo(deps);
   const postsRouter = createPostsRouter(createPostsHandlers({ postsRepo }));
@@ -147,6 +151,7 @@ function createApp(deps: AppDeps) {
   const v1Router = express.Router();
   v1Router.use('/auth', authRouter);
   v1Router.use('/billing', billingRouter);
+  v1Router.use('/demo', demoRouter);
   v1Router.use('/posts', postsRouter);
   app.use('/v1', v1Router);
 
