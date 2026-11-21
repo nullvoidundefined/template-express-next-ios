@@ -67,3 +67,10 @@ All application API routes below are served under the `/v1` prefix (e.g. `POST /
 | OpenAPI spec           | `apps/server/docs/openapi.yaml` (OpenAPI 3.1) documents all `/v1` routes + `{ code, error }`                                                                                          |
 | Analytics constants    | `@repo/constants` package with typed `ANALYTICS_EVENTS`                                                                                                                               |
 | Integration tests      | `pnpm --filter @template/server run test:integration`; skips without `DATABASE_URL`                                                                                                   |
+
+## Native (iPhone and Apple Watch)
+
+| Feature                         | Routes                                                                         | Notes                                                                                                                                                                                                                           |
+| ------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Native sign up, log in, log out | `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` | Bearer transport: `X-Session-Transport: token` at login and register; `Authorization: Bearer` header; token stored in the Keychain. Covered by the XCUITest in `apps/client/ios/tests/AppUITests` instead of a Playwright spec. |
+| Demo card to Apple Watch        | `POST /demo/cards`                                                             | Card shown on the phone and forwarded to the Watch via WatchConnectivity. Covered by the XCUITest in `apps/client/ios/tests/AppUITests` instead of a Playwright spec.                                                           |
