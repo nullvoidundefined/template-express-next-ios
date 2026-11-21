@@ -162,6 +162,9 @@ importers:
       '@repo/constants':
         specifier: workspace:^
         version: link:../../packages/constants
+      '@repo/types':
+        specifier: workspace:^
+        version: link:../../packages/types
       '@sentry/node':
         specifier: ^10.49.0
         version: 10.49.0

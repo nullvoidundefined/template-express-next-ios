@@ -1,6 +1,7 @@
 // Shared domain types used by both server and client surfaces.
 // Add one file per domain entity; re-export everything here.
 
+export type { Card, CardKind } from './cardTypes.js';
 export type { PasswordReset } from './passwordResetTypes.js';
 export type { User, UserRole } from './userTypes.js';
 

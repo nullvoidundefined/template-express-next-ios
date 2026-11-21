@@ -27,6 +27,7 @@
     "@aws-sdk/client-s3": "^3.1053.0",
     "@aws-sdk/s3-request-presigner": "^3.1053.0",
     "@repo/constants": "workspace:^",
+    "@repo/types": "workspace:^",
     "@sentry/node": "^10.49.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.77.3",
