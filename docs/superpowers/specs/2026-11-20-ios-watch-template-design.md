@@ -82,8 +82,8 @@ apps/client/ios/
   WatchApp/                 Watch target: hello-world and card screen, Watch side of the link
   Packages/AppCore/         local Swift package shared by both targets
     Sources/AppCore/        models, API client, session token store, card encoding
-    Tests/AppCoreTests/
-  AppUITests/               one phone UI test
+    tests/AppCoreTests/     lowercase so the repo's test-path guard recognizes it
+  tests/AppUITests/         one phone UI test
 ```
 
 ### Server changes

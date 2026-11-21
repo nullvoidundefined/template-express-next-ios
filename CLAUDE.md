@@ -5,6 +5,7 @@ Express 5 + Next.js 15 monorepo template. This file is auto-loaded on every sess
 - `apps/client/web/CLAUDE.md` for frontend, styling, component patterns, TanStack Query, no-Tailwind, per-component folders, `displayName`, `data-test-id`, Railway deployment (auto-loaded when working in `apps/client/web/`)
 - `apps/client/CLAUDE.md` for shared React and TypeScript conventions for the web client (auto-loaded when working in `apps/client/`)
 - `apps/server/CLAUDE.md` for backend, database, SQL safety, auth, CSRF implementation, Railway (auto-loaded when working in `apps/server/`)
+- `apps/client/ios/CLAUDE.md` for the iPhone and Watch apps, the `AppCore` Swift package, XcodeGen, and the pinned toolchain (auto-loaded when working in `apps/client/ios/`)
 - `packages/types/CLAUDE.md` for shared TypeScript types used by server and web client
 - `packages/tokens/CLAUDE.md` for design token system
 
@@ -71,6 +72,9 @@ pnpm lint                   # Lint all workspaces
 pnpm format:check           # Check formatting
 pnpm test                   # Run server unit tests
 pnpm test:coverage          # Unit tests with coverage
+pnpm ios:generate           # Generate the Xcode project with XcodeGen
+pnpm ios:test               # Run the AppCore Swift tests
+pnpm ios:format:check       # swift format lint
 pnpm --filter server run test:integration
 pnpm --filter server run migrate:up
 pnpm --filter server run migrate:down

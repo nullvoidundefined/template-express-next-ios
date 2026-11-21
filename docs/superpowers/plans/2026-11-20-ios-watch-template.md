@@ -221,7 +221,7 @@ Scaffolding with one real test so the pipeline is proven. PR line: "Test-first e
 
 **Files:**
 
-- Create: `apps/client/ios/project.yml`, `apps/client/ios/Config/Debug.xcconfig`, `apps/client/ios/Config/Release.xcconfig`, `apps/client/ios/.swift-format`, `apps/client/ios/CLAUDE.md`, `apps/client/ios/App/TemplateApp.swift`, `apps/client/ios/App/Info.plist`, `apps/client/ios/WatchApp/TemplateWatchApp.swift`, `apps/client/ios/Packages/AppCore/Package.swift`, `apps/client/ios/Packages/AppCore/Sources/AppCore/Models/User.swift`, `.../Models/Card.swift`, `apps/client/ios/Packages/AppCore/Tests/AppCoreTests/ModelDecodingTests.swift`, `.../Tests/AppCoreTests/Fixtures/user.json`, `.../Fixtures/card.json`
+- Create: `apps/client/ios/project.yml`, `apps/client/ios/Config/Debug.xcconfig`, `apps/client/ios/Config/Release.xcconfig`, `apps/client/ios/.swift-format`, `apps/client/ios/CLAUDE.md`, `apps/client/ios/App/TemplateApp.swift`, `apps/client/ios/App/Info.plist`, `apps/client/ios/WatchApp/TemplateWatchApp.swift`, `apps/client/ios/Packages/AppCore/Package.swift`, `apps/client/ios/Packages/AppCore/Sources/AppCore/Models/User.swift`, `.../Models/Card.swift`, `apps/client/ios/Packages/AppCore/tests/AppCoreTests/ModelDecodingTests.swift`, `.../tests/AppCoreTests/Fixtures/user.json`, `.../Fixtures/card.json`
 - Modify: `.gitignore`, `lefthook.yml`, `package.json` (scripts), `.github/workflows/ci.yml`, root `CLAUDE.md` (workspace list, commands)
 
 **Interfaces:**
@@ -254,7 +254,7 @@ public struct Card: Codable, Equatable, Identifiable, Sendable {
 - [ ] **Step 4: GREEN.** `pnpm ios:test` passes. `pnpm ios:generate` succeeds. `xcodebuild -project apps/client/ios/TemplateApp.xcodeproj -scheme App -destination 'generic/platform=iOS Simulator' build` and the same for scheme `WatchApp` with `generic/platform=watchOS Simulator` both end `BUILD SUCCEEDED`.
 - [ ] **Step 5: Tooling.** `.gitignore`: add `*.xcodeproj`, `.build/`, `DerivedData/`, `xcuserdata/`. `lefthook.yml`: add pre-commit `format-swift` (glob `apps/client/ios/**/*.swift`, run `swift format lint --strict {staged_files}`) and add `swift` to the `no-em-dash` glob. Do not add native steps to `pre-push`.
 - [ ] **Step 6: CI.** Add job `ios` to `ci.yml` on the runner label from Step 1, `fetch-depth: 0`. First step sets output `changed` to `true` when `git diff --name-only <base>...<head>` (base is `github.event.pull_request.base.sha`, or `github.event.before` on push) lists a path under `apps/client/ios/` or `.github/workflows/ci.yml`. Every later step has `if: steps.detect.outputs.changed == 'true'`: `brew install xcodegen`, `swift test --package-path apps/client/ios/Packages/AppCore`, `xcodegen generate`, `xcodebuild build` for schemes `App` and `WatchApp`, `swift format lint --strict --recursive apps/client/ios`. Task 5 adds the `xcodebuild test` step once a UI test exists. The job has no third-party actions beyond `actions/checkout`.
-- [ ] **Step 7: Conventions.** Write `apps/client/ios/CLAUDE.md`: layout, that logic lives in `AppCore` and targets hold views and glue only, tests under `Packages/AppCore/Tests` and `AppUITests`, accessibility identifiers in kebab-case, the Watch never talks to the server, how to rename the app (three values in `project.yml` and xcconfig), toolchain record from Step 1.
+- [ ] **Step 7: Conventions.** Write `apps/client/ios/CLAUDE.md`: layout, that logic lives in `AppCore` and targets hold views and glue only, tests under `Packages/AppCore/tests` and `tests/AppUITests`, accessibility identifiers in kebab-case, the Watch never talks to the server, how to rename the app (three values in `project.yml` and xcconfig), toolchain record from Step 1.
 - [ ] **Step 8: Commit** `feat(ios): scaffold the iPhone and Watch targets, AppCore package, and CI job`. Confirm the `ios` job runs and passes on the PR with `gh pr checks`.
 
 ---
@@ -266,7 +266,7 @@ public struct Card: Codable, Equatable, Identifiable, Sendable {
 - Create in `apps/client/ios/Packages/AppCore/Sources/AppCore/`: `Networking/APIError.swift`, `Networking/APIClient.swift`, `Networking/URLSessionAPIClient.swift`, `Session/SessionTokenStore.swift`, `Session/KeychainSessionTokenStore.swift`, `Session/InMemorySessionTokenStore.swift`, `Auth/AuthViewModel.swift`, `Auth/CredentialValidator.swift`
 - Create in `apps/client/ios/App/`: `Features/Auth/LoginView.swift`, `Features/Auth/RegisterView.swift`, `Features/Root/RootView.swift`, `Features/Root/UnreachableView.swift`, `Support/StubAPIClient.swift` (compiled in Debug only), `Support/AppEnvironment.swift`
 - Modify: `apps/client/ios/App/TemplateApp.swift`
-- Test: `apps/client/ios/Packages/AppCore/Tests/AppCoreTests/URLSessionAPIClientTests.swift`, `SessionTokenStoreTests.swift`, `AuthViewModelTests.swift`, `CredentialValidatorTests.swift`, `Support/StubURLProtocol.swift`, `Support/FakeAPIClient.swift`; `apps/client/ios/AppUITests/AuthFlowUITests.swift`
+- Test: `apps/client/ios/Packages/AppCore/tests/AppCoreTests/URLSessionAPIClientTests.swift`, `SessionTokenStoreTests.swift`, `AuthViewModelTests.swift`, `CredentialValidatorTests.swift`, `Support/StubURLProtocol.swift`, `Support/FakeAPIClient.swift`; `apps/client/ios/tests/AppUITests/AuthFlowUITests.swift`
 
 **Interfaces:**
 
@@ -361,7 +361,7 @@ Accessibility identifiers: `login-email-field`, `login-password-field`, `login-s
 
 - Create: `apps/client/ios/Packages/AppCore/Sources/AppCore/Home/HomeViewModel.swift`, `.../Watch/WatchLink.swift`, `apps/client/ios/App/Features/Home/HomeView.swift`, `apps/client/ios/App/Features/Home/CardView.swift`
 - Modify: `URLSessionAPIClient.swift` (`createDemoCard`), `StubAPIClient.swift`, `RootView.swift` (signed-in case shows `HomeView`)
-- Test: `.../Tests/AppCoreTests/HomeViewModelTests.swift`, additions to `URLSessionAPIClientTests.swift`, `Support/FakeWatchLink.swift`; additions to `AuthFlowUITests.swift`
+- Test: `.../tests/AppCoreTests/HomeViewModelTests.swift`, additions to `URLSessionAPIClientTests.swift`, `Support/FakeWatchLink.swift`; additions to `AuthFlowUITests.swift`
 
 **Interfaces:**
 
@@ -408,7 +408,7 @@ Identifiers: `home-email`, `home-send-message-button`, `home-send-prompt-button`
 
 - Create: `apps/client/ios/Packages/AppCore/Sources/AppCore/Watch/CardContext.swift`, `.../Watch/LatestCardStore.swift`, `apps/client/ios/App/Services/WatchConnectivityLink.swift`, `apps/client/ios/WatchApp/WatchContextReceiver.swift`, `apps/client/ios/WatchApp/WatchRootView.swift`
 - Modify: `apps/client/ios/WatchApp/TemplateWatchApp.swift`, `apps/client/ios/App/Support/AppEnvironment.swift` (use `WatchConnectivityLink`)
-- Test: `.../Tests/AppCoreTests/CardContextTests.swift`, `LatestCardStoreTests.swift`
+- Test: `.../tests/AppCoreTests/CardContextTests.swift`, `LatestCardStoreTests.swift`
 
 **Interfaces:**
 
