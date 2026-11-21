@@ -34,6 +34,7 @@ struct RegisterView: View {
                     .accessibilityIdentifier("register-submit-button")
             }
         }
+        .onAppear { viewModel.clearError() }
         .navigationTitle("Create account")
     }
 

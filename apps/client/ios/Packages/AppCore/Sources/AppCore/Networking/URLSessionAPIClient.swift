@@ -35,6 +35,15 @@ public final class URLSessionAPIClient: APIClient {
         self.tokenStore = tokenStore
     }
 
+    // The session token travels in a header, so the system cookie jar must stay out of it.
+    public static func makeSessionConfiguration() -> URLSessionConfiguration {
+        let configuration = URLSessionConfiguration.default
+        configuration.httpCookieAcceptPolicy = .never
+        configuration.httpCookieStorage = nil
+        configuration.httpShouldSetCookies = false
+        return configuration
+    }
+
     public func createDemoCard(kind: CardKind) async throws -> Card {
         // Implemented with the demo cards screen.
         throw APIError.decoding

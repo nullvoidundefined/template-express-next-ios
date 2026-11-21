@@ -21,8 +21,13 @@ public final class AuthViewModel {
         self.tokenStore = tokenStore
     }
 
+    public func clearError() {
+        errorMessage = nil
+    }
+
     public func handleUnauthorized() {
         try? tokenStore.clear()
+        errorMessage = nil
         state = .signedOut(notice: "You were signed out. Log in again.")
     }
 
@@ -51,8 +56,11 @@ public final class AuthViewModel {
             state = .signedIn(try await apiClient.fetchCurrentUser())
         } catch APIError.unauthorized {
             state = .signedOut(notice: nil)
-        } catch {
+        } catch APIError.network {
             state = .unreachable
+        } catch {
+            try? tokenStore.clear()
+            state = .signedOut(notice: "Something went wrong. Log in again.")
         }
     }
 

@@ -13,7 +13,9 @@ enum AppEnvironment {
         #endif
         let tokenStore = KeychainSessionTokenStore(service: keychainService)
         let apiClient = URLSessionAPIClient(
-            baseURL: apiBaseURL(), session: makeSession(), tokenStore: tokenStore)
+            baseURL: apiBaseURL(),
+            session: URLSession(configuration: URLSessionAPIClient.makeSessionConfiguration()),
+            tokenStore: tokenStore)
         return AuthViewModel(apiClient: apiClient, tokenStore: tokenStore)
     }
 
@@ -24,13 +26,5 @@ enum AppEnvironment {
             preconditionFailure("APIBaseURL is missing or not a URL. Set API_BASE_URL in the xcconfig files.")
         }
         return url
-    }
-
-    // The session token travels in a header, so the system cookie jar must stay out of it.
-    private static func makeSession() -> URLSession {
-        let configuration = URLSessionConfiguration.default
-        configuration.httpCookieStorage = nil
-        configuration.httpShouldSetCookies = false
-        return URLSession(configuration: configuration)
     }
 }

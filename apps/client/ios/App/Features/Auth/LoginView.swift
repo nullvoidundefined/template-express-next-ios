@@ -45,6 +45,7 @@ struct LoginView: View {
                 .accessibilityIdentifier("login-register-link")
             }
         }
+        .onAppear { viewModel.clearError() }
         .navigationTitle("Log in")
     }
 
