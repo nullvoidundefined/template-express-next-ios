@@ -30,5 +30,15 @@ echo "Using simulator: $name, $runtime, $udid"
 # CI runner is slow enough right after launch that the accessibility audit times out.
 xcrun simctl bootstatus "$udid" -b
 
-xcodebuild test -project "$project" -scheme App -configuration Debug \
+# Build first, so compiling does not compete with the simulator while the test runs.
+xcodebuild build-for-testing -project "$project" -scheme App -configuration Debug \
+    -destination "platform=iOS Simulator,id=$udid" CODE_SIGNING_ALLOWED=NO
+
+# Launch and quit a system app before the test. On a slow CI runner the first app
+# launch after boot can time out ("Timed out while acquiring background assertion");
+# this makes that first launch happen outside the test.
+xcrun simctl launch "$udid" com.apple.Preferences >/dev/null
+xcrun simctl terminate "$udid" com.apple.Preferences >/dev/null 2>&1 || true
+
+xcodebuild test-without-building -project "$project" -scheme App -configuration Debug \
     -destination "platform=iOS Simulator,id=$udid" CODE_SIGNING_ALLOWED=NO
