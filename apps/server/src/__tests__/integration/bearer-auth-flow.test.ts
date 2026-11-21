@@ -99,6 +99,29 @@ describe.skipIf(!DB_AVAILABLE)('bearer auth integration', () => {
       expect(Object.keys(res.body)).toEqual(['user']);
       expect(res.headers['set-cookie']).toBeDefined();
     });
+
+    it('password change on a cookie session returns only user and sets a cookie', async () => {
+      const credentials = newCredentials();
+      const registerRes = await agent()
+        .post('/v1/auth/register')
+        .set(CSRF_HEADER, CSRF_VALUE)
+        .send(credentials);
+      const cookie =
+        ((registerRes.headers['set-cookie'] ?? []) as string[])[0] ?? '';
+
+      const res = await agent()
+        .patch('/v1/auth/me')
+        .set('Cookie', cookie)
+        .set(CSRF_HEADER, CSRF_VALUE)
+        .send({
+          currentPassword: credentials.password,
+          newPassword: randomBytes(12).toString('hex'),
+        });
+
+      expect(res.status).toBe(200);
+      expect(Object.keys(res.body)).toEqual(['user']);
+      expect(res.headers['set-cookie']).toBeDefined();
+    });
   });
 
   describe('GET /v1/auth/me with a bearer token', () => {
@@ -219,6 +242,7 @@ describe.skipIf(!DB_AVAILABLE)('bearer auth integration', () => {
       expect(res.body.sessionToken).toMatch(SESSION_TOKEN_PATTERN);
       expect(res.body.sessionToken).not.toBe(body.sessionToken);
       expect(res.headers['set-cookie']).toBeUndefined();
+      expect(res.headers['cache-control']).toBe('no-store');
 
       const oldMe = await agent()
         .get('/v1/auth/me')
