@@ -819,6 +819,12 @@ These layer on top of the root non-negotiables in `../CLAUDE.md`. If they confli
 
 Custom cookie-based sessions. Cookie name: `sid`, 7-day TTL, httpOnly, secure in prod. Token stored as SHA-256 hash in `sessions` table. `loadSession` middleware populates `req.user` (including `role`). `requireAuth` middleware gates authenticated routes; `requireAdmin` gates admin-only routes (401 when unauthenticated, 403 when `req.user.role !== 'admin'`). Apply `requireAdmin` after `loadSession` on the router or route.
 
+#### Bearer transport (native clients)
+
+Native clients (the iOS app) cannot rely on a cookie jar, so the same session token also travels as `Authorization: Bearer <64 lowercase hex>`. `parseSessionToken` (`services/parseSessionTokenParser.ts`) reads it; the scheme is case-insensitive, and non-bearer schemes are ignored. Clients opt in at sign-in with `X-Session-Transport: token` on `POST /v1/auth/register`, `POST /v1/auth/login`, and `PATCH /v1/auth/me` (password change). The response is then `{ sessionToken, user }` with `Cache-Control: no-store` and no cookie. Without that header the responses are unchanged: cookie set, body only `{ user }`. The token never appears in a response body without the opt-in header and is never logged.
+
+Sending both a `sid` cookie and a bearer header is rejected with 400 `AUTH_AMBIGUOUS_CREDENTIALS`. Logout deletes the session from either source and clears the cookie only when the token came from the cookie. CSRF applies to bearer requests the same as to cookie requests.
+
 ### CSRF
 
 Header-only pattern. `X-Requested-With: XMLHttpRequest` required on all state-changing requests (POST, PUT, PATCH, DELETE). No token endpoint. The `csrfGuard` middleware rejects requests missing the header on mutating methods.
