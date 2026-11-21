@@ -16,6 +16,7 @@
     "ios:format:check": "swift format lint --strict --recursive apps/client/ios",
     "ios:generate": "cd apps/client/ios && xcodegen generate",
     "ios:verify-config": "bash apps/client/ios/scripts/verify-build-config.sh",
+    "ios:test:ui": "bash apps/client/ios/scripts/run-ui-tests.sh",
     "ios:test": "swift test --package-path apps/client/ios/Packages/AppCore",
     "format": "prettier --write '*.{ts,mjs,yml,md}' 'e2e/**/*.ts' 'docs/**/*.md' && pnpm -r run format",
     "format:check": "prettier --check '*.{ts,mjs,yml,md}' 'e2e/**/*.ts' 'docs/**/*.md' && pnpm -r run format:check",
