@@ -15,6 +15,19 @@ final class WatchConnectivityLink: NSObject, WatchLink, WCSessionDelegate, @unch
         session.activate()
     }
 
+    func clear() -> WatchDelivery {
+        guard WCSession.isSupported() else { return .unavailable }
+        let session = WCSession.default
+        guard session.activationState == .activated, session.isPaired, session.isWatchAppInstalled
+        else { return .unavailable }
+        do {
+            try session.updateApplicationContext(CardContext.encodeClear())
+            return .sent
+        } catch {
+            return .unavailable
+        }
+    }
+
     func send(_ card: Card) -> WatchDelivery {
         guard WCSession.isSupported() else { return .unavailable }
         let session = WCSession.default

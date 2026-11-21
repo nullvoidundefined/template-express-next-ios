@@ -43,6 +43,7 @@
 
     /// A Watch link for UI tests, so they never depend on WatchConnectivity.
     struct UnavailableWatchLink: WatchLink {
+        func clear() -> WatchDelivery { .unavailable }
         func send(_ card: Card) -> WatchDelivery { .unavailable }
     }
 #endif

@@ -28,7 +28,9 @@ struct AppEnvironment {
     private static func make(
         apiClient: APIClient, tokenStore: SessionTokenStore, watchLink: WatchLink
     ) -> AppEnvironment {
-        let authViewModel = AuthViewModel(apiClient: apiClient, tokenStore: tokenStore)
+        let authViewModel = AuthViewModel(
+            apiClient: apiClient, tokenStore: tokenStore,
+            onSignedOut: { _ = watchLink.clear() })
         return AppEnvironment(
             authViewModel: authViewModel,
             makeHomeViewModel: {

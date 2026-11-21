@@ -12,7 +12,16 @@ import Observation
         self.card = CardContext.decode([CardContext.key: defaults.object(forKey: Self.savedKey) as Any])
     }
 
+    public func clear() {
+        card = nil
+        defaults.removeObject(forKey: Self.savedKey)
+    }
+
     public func receive(context: [String: Any]) {
+        if CardContext.isClear(context) {
+            clear()
+            return
+        }
         guard let received = CardContext.decode(context),
             let data = context[CardContext.key] as? Data
         else { return }
