@@ -60,7 +60,7 @@ The four pieces are Postgres, the server, the web app, and the native apps (iPho
    docker compose up -d postgres
    ```
 
-   When you create `apps/server/.env` in step 2, set `DATABASE_URL` to `postgresql://<POSTGRES_USER>:<POSTGRES_PASSWORD>@localhost:5432/<POSTGRES_DB>`, with the placeholders replaced by the `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` values in `docker-compose.yml`. The host is `localhost` because the server runs on your machine, not inside Compose. Also set `SESSION_SECRET` in `apps/server/.env`. The server requires `DATABASE_URL` and `SESSION_SECRET` and refuses to start without them. A Postgres you already run locally works as well.
+   When you create `apps/server/.env` in step 2, set `DATABASE_URL` to a Postgres connection URL built from five parts: the scheme `postgresql`, the user, the password, the host and port `localhost:5432`, and the database name. The user, password, and database name are the `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` values in `docker-compose.yml`. The same URL with its real values is in the `e2e` job of `.github/workflows/ci.yml`, under `DATABASE_URL`, with a different database name. The host is `localhost` because the server runs on your machine, not inside Compose. Also set `SESSION_SECRET` in `apps/server/.env`. The server requires `DATABASE_URL` and `SESSION_SECRET` and refuses to start without them. A Postgres you already run locally works as well.
 
 2. Install, configure, and migrate as in Getting Started steps 1 to 3 (`pnpm install`, copy `apps/server/.env.example` to `apps/server/.env`, `pnpm --filter server run migrate:up`).
 3. Start the server and web app:
