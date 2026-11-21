@@ -60,7 +60,7 @@ The four pieces are Postgres, the server, the web app, and the native apps (iPho
    docker compose up -d postgres
    ```
 
-   When you create `apps/server/.env` in step 2, set `DATABASE_URL` to point at it. The user, password, and database name are the `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` values in `docker-compose.yml`. A Postgres you already run locally works as well.
+   When you create `apps/server/.env` in step 2, set `DATABASE_URL` to `postgresql://<POSTGRES_USER>:<POSTGRES_PASSWORD>@localhost:5432/<POSTGRES_DB>`, with the placeholders replaced by the `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` values in `docker-compose.yml`. The host is `localhost` because the server runs on your machine, not inside Compose. Also set `SESSION_SECRET` in `apps/server/.env`. The server requires `DATABASE_URL` and `SESSION_SECRET` and refuses to start without them. A Postgres you already run locally works as well.
 
 2. Install, configure, and migrate as in Getting Started steps 1 to 3 (`pnpm install`, copy `apps/server/.env.example` to `apps/server/.env`, `pnpm --filter server run migrate:up`).
 3. Start the server and web app:
@@ -87,7 +87,7 @@ If no Watch is paired, the card shows on the phone with the note "No Apple Watch
 Change three values, then run `pnpm ios:generate`:
 
 1. The project `name` in `apps/client/ios/project.yml`.
-2. The bundle id `com.example.templateapp`. It is set in `project.yml` for both targets, along with `INFOPLIST_KEY_WKCompanionAppBundleIdentifier`.
+2. The bundle id `com.example.templateapp`. Replace every `com.example` in `project.yml`: `bundleIdPrefix`, `PRODUCT_BUNDLE_IDENTIFIER` for `App`, `WatchApp`, and `AppUITests`, and `INFOPLIST_KEY_WKCompanionAppBundleIdentifier`. Keep the Watch id equal to the phone id plus `.watchkitapp`, the UI test id equal to the phone id plus `.uitests`, and the companion key equal to the phone id.
 3. `API_BASE_URL` in `apps/client/ios/Config/Debug.xcconfig` and `apps/client/ios/Config/Release.xcconfig`.
 
 Release builds fail unless `API_BASE_URL` in `Release.xcconfig` starts with `https://`.

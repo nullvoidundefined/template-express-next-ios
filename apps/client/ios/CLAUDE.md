@@ -31,7 +31,7 @@ pnpm ios:verify-config  # Release needs https, ATS exception is Debug-only (run 
 
 ## Renaming the app
 
-Change three values, then run `pnpm ios:generate`: the project `name` in `project.yml`, the bundle id (`com.example.templateapp`, set in `project.yml` for both targets along with `INFOPLIST_KEY_WKCompanionAppBundleIdentifier`), and `API_BASE_URL` in the xcconfig files.
+Change three values, then run `pnpm ios:generate`: the project `name` in `project.yml`, the bundle id (replace every `com.example` in `project.yml`: `bundleIdPrefix`, `PRODUCT_BUNDLE_IDENTIFIER` for `App`, `WatchApp`, and `AppUITests`, and `INFOPLIST_KEY_WKCompanionAppBundleIdentifier`; keep the Watch id as the phone id plus `.watchkitapp`, the UI test id as the phone id plus `.uitests`, and the companion key equal to the phone id), and `API_BASE_URL` in the xcconfig files.
 
 ## Toolchain record
 

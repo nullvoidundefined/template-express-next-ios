@@ -26,7 +26,9 @@ After logging in on the iPhone, the user can send a card to the Apple Watch. The
 - Unit (HomeViewModel): `apps/client/ios/Packages/AppCore/tests/AppCoreTests/HomeViewModelTests.swift`
 - Unit (CardContext): `apps/client/ios/Packages/AppCore/tests/AppCoreTests/CardContextTests.swift`
 - Unit (LatestCardStore): `apps/client/ios/Packages/AppCore/tests/AppCoreTests/LatestCardStoreTests.swift`
-- UI (login, send message, accessibility audit): `apps/client/ios/tests/AppUITests/AuthFlowUITests.swift`
+- UI (phone only: login, send message, accessibility audit, against a stubbed API client; the Watch is not exercised): `apps/client/ios/tests/AppUITests/AuthFlowUITests.swift`
 - Integration (demo cards flow): `apps/server/src/__tests__/integration/demo-cards-flow.test.ts`
 - Unit (demo handlers): `apps/server/src/__tests__/handlers/demoHandler.test.ts`
 - Unit (demo card service): `apps/server/src/__tests__/services/demoCardService.test.ts`
+
+Delivery to a real paired Watch has no automated test. It is checked by hand in paired simulators.

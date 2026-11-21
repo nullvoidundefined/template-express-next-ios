@@ -25,7 +25,7 @@ The iPhone app lets a user register, log in, stay logged in across launches, and
 - Unit (CredentialValidator): `apps/client/ios/Packages/AppCore/tests/AppCoreTests/CredentialValidatorTests.swift`
 - Unit (ModelDecoding): `apps/client/ios/Packages/AppCore/tests/AppCoreTests/ModelDecodingTests.swift`
 - Unit (URLSessionAPIClient): `apps/client/ios/Packages/AppCore/tests/AppCoreTests/URLSessionAPIClientTests.swift`
-- UI (login, send, logout, audit): `apps/client/ios/tests/AppUITests/AuthFlowUITests.swift`
+- UI (login, send, logout, accessibility audit, against a stubbed API client, not the server): `apps/client/ios/tests/AppUITests/AuthFlowUITests.swift`
 - Integration (bearer auth flow): `apps/server/src/__tests__/integration/bearer-auth-flow.test.ts`
 - Integration (auth flow): `apps/server/src/__tests__/integration/auth-flow.test.ts`
 - Unit (auth handlers): `apps/server/src/__tests__/handlers/auth/authHandler.test.ts`
