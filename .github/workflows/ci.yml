@@ -49,7 +49,7 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: template_integration
+          POSTGRES_DB: nagbot_integration
           # Trust auth: this throwaway container needs no password, so none is written here.
           POSTGRES_HOST_AUTH_METHOD: trust
           POSTGRES_USER: postgres
@@ -83,7 +83,7 @@ jobs:
           export SESSION_SECRET="$(openssl rand -hex 32)"
           pnpm --filter ./apps/server run test:integration
         env:
-          DATABASE_URL: postgresql://postgres@localhost:5432/template_integration
+          DATABASE_URL: postgresql://postgres@localhost:5432/nagbot_integration
           NODE_ENV: test
 
   e2e:
@@ -102,7 +102,7 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: template_test
+          POSTGRES_DB: nagbot_test
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
         options: >-
@@ -131,12 +131,12 @@ jobs:
       - name: Run migrations
         run: pnpm --filter ./apps/server run migrate:up
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/template_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nagbot_test
 
       - name: Seed test data
         run: pnpm --filter ./apps/server run seed:test
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/template_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nagbot_test
           NODE_ENV: test
           SESSION_SECRET: ci-test-secret-minimum-32-characters
 
@@ -152,7 +152,7 @@ jobs:
         run: pnpm run test:e2e
         env:
           CORS_ORIGIN: http://localhost:3000
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/template_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nagbot_test
           NEXT_PUBLIC_API_URL: http://localhost:3001
           NODE_ENV: test
           REDIS_URL: redis://localhost:6379
@@ -164,8 +164,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Build production web image
+        run: docker build -f Dockerfile.web -t template-web:ci .
+
+      # Run the web image the way Railway does: non-root, on $PORT, healthcheck /.
+      - name: Verify web image serves / on PORT
+        run: |
+          docker run -d --name web-smoke -e PORT=8080 -p 8080:8080 template-web:ci
+          for i in $(seq 1 30); do
+            if curl -fsS -o /dev/null http://localhost:8080/; then
+              docker rm -f web-smoke
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs web-smoke
+          exit 1
+
       - name: Build production server image
-        run: docker build -t template-server:ci .
+        run: docker build -t nagbot-server:ci .
 
       # The server imports @repo/constants at runtime from source. Resolve it
       # from the server's working directory (where pnpm places the workspace
@@ -173,7 +190,7 @@ jobs:
       # is the exact failure mode a build-only check misses.
       - name: Verify workspace packages resolve at runtime
         run: |
-          docker run --rm -w /app/apps/server template-server:ci \
+          docker run --rm -w /app/apps/server nagbot-server:ci \
             node --input-type=module -e "
               import('@repo/constants')
                 .then((m) => {
@@ -227,13 +244,13 @@ jobs:
       - name: Build iPhone app
         if: steps.detect.outputs.changed == 'true'
         run: >-
-          xcodebuild -project apps/client/ios/TemplateApp.xcodeproj -scheme App -configuration Debug
+          xcodebuild -project apps/client/ios/Nagbot.xcodeproj -scheme App -configuration Debug
           -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
 
       - name: Build Watch app
         if: steps.detect.outputs.changed == 'true'
         run: >-
-          xcodebuild -project apps/client/ios/TemplateApp.xcodeproj -scheme WatchApp -configuration Debug
+          xcodebuild -project apps/client/ios/Nagbot.xcodeproj -scheme WatchApp -configuration Debug
           -destination 'generic/platform=watchOS Simulator' build CODE_SIGNING_ALLOWED=NO
 
       - name: Test iPhone UI
