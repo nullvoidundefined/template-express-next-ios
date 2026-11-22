@@ -115,21 +115,24 @@ CI runs the `ios` job on a macOS runner only when files under `apps/client/ios/`
 
 ## Deployment
 
-### Server (Railway)
+Deploy to one Railway project with two services, `api` and `web`, both connected to this repo's `main` branch, plus a Neon Postgres database. Both services build from the repo root (leave the root directory empty), because the Dockerfiles need the whole pnpm workspace.
 
-1. Create a Railway project and provision a Postgres database.
-2. Link the repo and set root directory to `apps/server/`.
-3. Set required env vars: `DATABASE_URL`, `SESSION_SECRET`, `CORS_ORIGIN`, `NODE_ENV=production`.
-4. Run migrations before first deploy: `pnpm --filter server run migrate:up`.
-5. Railway uses the `Dockerfile` `server` stage. The start script runs migrations then starts the server.
+Set build and deploy settings on each Railway service, not in a config file. Railway deprecated `railway.toml` and stops reading it on 2026-12-01.
 
-### Web Client (Railway)
+| Setting             | `api`                                                                                  | `web`                                                              |
+| ------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Dockerfile path     | `Dockerfile`                                                                           | `Dockerfile.web`                                                   |
+| Start command       | `/app/start.sh` (runs migrations, then the server)                                     | image default (`next start` on `$PORT`)                            |
+| Healthcheck path    | `/health`                                                                              | `/`                                                                |
+| Healthcheck timeout | 300 seconds (migrations run before the server listens)                                 | 300 seconds                                                        |
+| Restart policy      | on failure, 10 retries                                                                 | on failure, 10 retries                                             |
+| Variables           | `NODE_ENV`, `PORT=3001`, `DATABASE_URL`, `SESSION_SECRET`, `CORS_ORIGIN`, `CLIENT_URL` | `NODE_ENV`, `PORT=3000`, `NEXT_PUBLIC_API_URL`, `INTERNAL_API_URL` |
 
-1. Add a `web` service to the same Railway project as the `api`, `postgres`, and `redis` services.
-2. Set the root directory to `apps/client/web/` in the Railway service settings.
-3. Set `NODE_ENV=production` on the web service.
-4. Set all required env vars on the web service before the first deploy (at minimum `NEXT_PUBLIC_API_URL` pointing to your Railway API URL).
-5. Railway's default Next.js health check applies; no custom `/health` route is needed on the web service.
+- Use Neon's direct (non-pooled) URL for `DATABASE_URL`: the start script runs `node-pg-migrate` against it, and its session-level lock needs a direct connection.
+- `DATABASE_MIGRATION_URL` is declared in the env schema but `start.sh` does not read it, so do not set it. Splitting a pooled `DATABASE_URL` from a direct migration URL (as `apps/server/CLAUDE.md` describes) needs `start.sh` to pass that URL to `node-pg-migrate` first.
+- `NEXT_PUBLIC_API_URL` is inlined at build time, so changing it needs a rebuild, not a restart.
+- Set `INTERNAL_API_URL` to `http://api.railway.internal:3001` (private network) for server-side calls from the web service.
+- Give each service a public domain on its `PORT`, then set `CORS_ORIGIN` and `CLIENT_URL` on `api` to the web URL.
 
 ## Key Commands
 

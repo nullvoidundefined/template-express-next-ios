@@ -1,0 +1,47 @@
+# Next.js web client image for the Railway `web` service.
+# Railway build and deploy settings (Dockerfile path, healthcheck, restart
+# policy) live on each service in Railway, not in a config file: Railway
+# deprecated railway.toml and stops reading it on 2026-12-01.
+
+# --- Base ---
+FROM node:22 AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+WORKDIR /app
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+
+# --- Dependencies ---
+# Every workspace package.json must be present so pnpm can resolve the
+# workspace:^ deps (@repo/constants, @repo/tokens, @repo/types).
+FROM base AS deps
+COPY apps/server/package.json apps/server/package.json
+COPY apps/client/web/package.json apps/client/web/package.json
+COPY packages/constants/package.json packages/constants/package.json
+COPY packages/tokens/package.json packages/tokens/package.json
+COPY packages/types/package.json packages/types/package.json
+RUN LEFTHOOK=0 pnpm install --frozen-lockfile
+
+# --- Build ---
+# NEXT_PUBLIC_* values are inlined at build time. Railway passes service
+# variables with matching names as build arguments.
+FROM deps AS build
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_POSTHOG_KEY
+ARG NEXT_PUBLIC_SENTRY_DSN
+COPY packages/ packages/
+COPY apps/client/web/ apps/client/web/
+RUN pnpm --filter web run build
+
+# --- Runtime ---
+FROM base AS web
+ENV NODE_ENV=production
+COPY --from=deps /app/node_modules node_modules
+COPY --from=deps /app/apps/client/web/node_modules apps/client/web/node_modules
+COPY --from=build /app/apps/client/web apps/client/web
+COPY packages/ packages/
+USER node
+WORKDIR /app/apps/client/web
+EXPOSE 3000
+CMD ["sh", "-c", "exec node_modules/.bin/next start -p ${PORT:-3000}"]

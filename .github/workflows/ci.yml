@@ -164,6 +164,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Build production web image
+        run: docker build -f Dockerfile.web -t template-web:ci .
+
+      # Run the web image the way Railway does: non-root, on $PORT, healthcheck /.
+      - name: Verify web image serves / on PORT
+        run: |
+          docker run -d --name web-smoke -e PORT=8080 -p 8080:8080 template-web:ci
+          for i in $(seq 1 30); do
+            if curl -fsS -o /dev/null http://localhost:8080/; then
+              docker rm -f web-smoke
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs web-smoke
+          exit 1
+
       - name: Build production server image
         run: docker build -t template-server:ci .
 
