@@ -119,15 +119,17 @@ Deploy to one Railway project with two services, `api` and `web`, both connected
 
 Set build and deploy settings on each Railway service, not in a config file. Railway deprecated `railway.toml` and stops reading it on 2026-12-01.
 
-| Setting          | `api`                                                                                                            | `web`                                                              |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Dockerfile path  | `Dockerfile`                                                                                                     | `Dockerfile.web`                                                   |
-| Start command    | `/app/start.sh` (runs migrations, then the server)                                                               | image default (`next start` on `$PORT`)                            |
-| Healthcheck path | `/health`                                                                                                        | `/`                                                                |
-| Restart policy   | on failure, 10 retries                                                                                           | on failure, 10 retries                                             |
-| Variables        | `NODE_ENV`, `PORT=3001`, `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `SESSION_SECRET`, `CORS_ORIGIN`, `CLIENT_URL` | `NODE_ENV`, `PORT=3000`, `NEXT_PUBLIC_API_URL`, `INTERNAL_API_URL` |
+| Setting             | `api`                                                                                  | `web`                                                              |
+| ------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Dockerfile path     | `Dockerfile`                                                                           | `Dockerfile.web`                                                   |
+| Start command       | `/app/start.sh` (runs migrations, then the server)                                     | image default (`next start` on `$PORT`)                            |
+| Healthcheck path    | `/health`                                                                              | `/`                                                                |
+| Healthcheck timeout | 300 seconds (migrations run before the server listens)                                 | 300 seconds                                                        |
+| Restart policy      | on failure, 10 retries                                                                 | on failure, 10 retries                                             |
+| Variables           | `NODE_ENV`, `PORT=3001`, `DATABASE_URL`, `SESSION_SECRET`, `CORS_ORIGIN`, `CLIENT_URL` | `NODE_ENV`, `PORT=3000`, `NEXT_PUBLIC_API_URL`, `INTERNAL_API_URL` |
 
 - Use Neon's direct (non-pooled) URL for `DATABASE_URL`: the start script runs `node-pg-migrate` against it, and its session-level lock needs a direct connection.
+- `DATABASE_MIGRATION_URL` is declared in the env schema but `start.sh` does not read it, so do not set it. Splitting a pooled `DATABASE_URL` from a direct migration URL (as `apps/server/CLAUDE.md` describes) needs `start.sh` to pass that URL to `node-pg-migrate` first.
 - `NEXT_PUBLIC_API_URL` is inlined at build time, so changing it needs a rebuild, not a restart.
 - Set `INTERNAL_API_URL` to `http://api.railway.internal:3001` (private network) for server-side calls from the web service.
 - Give each service a public domain on its `PORT`, then set `CORS_ORIGIN` and `CLIENT_URL` on `api` to the web URL.
